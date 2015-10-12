@@ -182,7 +182,7 @@ coef_info <- cbind(coef_info, odds_ratios, odds_ratios_low, odds_ratios_high)
 colnames(coef_info)[ncol(coef_info)-2] <- "odds"
 colnames(coef_info)[ncol(coef_info)-1] <- "odds_2.5%"
 colnames(coef_info)[ncol(coef_info)] <- "odds_97.5%"
-write.table(coef_info, sep=",", 
+write.table(round(coef_info, digits=3), sep=",", 
             file=paste(result_dir, "coef_info.csv", sep=""), col.names=NA)
 
 # 
