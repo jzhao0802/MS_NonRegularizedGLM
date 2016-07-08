@@ -15,8 +15,8 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-data_dir <- "C:/Work/Projects/MultipleSclerosis/Results/2015-10-06/2015-10-06 17.57.03/"
-study_name <- c("combined_relapse_fu_any_01")
+data_dir <- "C:/Work/Projects/MultipleSclerosis/Results/2015-10-06/2015-10-06 17.22.37/"
+study_name <- c("B2S_relapse_fu_any_01")
 
 # read and transform the data
 
@@ -32,9 +32,19 @@ n_data <- length(y)
 
 # parameters for the best glmnet model
 
-selected_alpha <- 0.85
-selected_lambda <- 0.01462
-# selected_lambda <- 0.01
+# # continue
+# selected_alpha <- 0.0
+# selected_lambda <- 0.1609
+# # B2B
+# selected_alpha <- 0.0
+# selected_lambda <- 39.63
+# # B2F
+# selected_alpha <- 0.6
+# selected_lambda <- 1.317
+# # selected_lambda <- 0.0935
+# B2S
+selected_alpha <- 0.0
+selected_lambda <- 10000
 
 # fit the glmnet and glm models
 
@@ -173,8 +183,13 @@ write.table(selected_var_names, sep=",",
 fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", selected_var_names)])
 # p_values <- coef(summary(fit_glm))[,4]
 ci_coefs <- confint(fit_glm)
+summary_fit_glm <- coef(summary(fit_glm))
 
-coef_info <- cbind(coef(summary(fit_glm)), ci_coefs)
+
+vars2Remove <- is.na(ci_coefs[, "2.5 %"])
+ci_coefs <- ci_coefs[!vars2Remove, ]
+
+coef_info <- cbind(summary_fit_glm, ci_coefs)
 odds_ratios <- exp(coef_info[,1])
 odds_ratios_low <- exp(ci_coefs[,1])
 odds_ratios_high <- exp(ci_coefs[,2])
