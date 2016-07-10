@@ -24,8 +24,7 @@ dataDir <- paste0(rootDataDir, "1/", cohortNames[1], "/", outcomeNames[1], "/")
 
 dataset <- read.csv(paste0(dataDir, cohortNames[1], "_data_for_model.csv"), 
                     header=TRUE, sep=",", check.names=FALSE)
-# first column is index
-dataset[,1] <- NULL
+
 y <- dataset[, 1]
 X <- dataset[, 2:ncol(dataset)]
 X <- data.matrix(X)
