@@ -15,7 +15,7 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-rootDataDir <- "C:/Work/Projects/MultipleSclerosis/Results/2016-07-08/2016-07-08 16.00.19/"
+rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-08/2016-07-08 16.00.19/"
 cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01")
 dataDir <- paste0(rootDataDir, "1/", cohortNames[1], "/", outcomeNames[1], "/")
@@ -34,10 +34,8 @@ n_data <- length(y)
 # parameters for the best glmnet model
 
 paramInfo <- read.csv(paste0(dataDir, cohortNames[1], "_params.csv"))
-# selected_alpha <- median(paramInfo$alpha)
-# selected_lambda <- median(paramInfo$lambda)
-selected_alpha <- paramInfo$alpha[4]
-selected_lambda <- paramInfo$lambda[4]
+selected_alpha <- median(paramInfo$alpha)
+selected_lambda <- median(paramInfo$lambda)
 
 # fit the glmnet and glm models
 
