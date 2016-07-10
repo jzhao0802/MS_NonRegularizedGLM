@@ -1,55 +1,93 @@
 library(caret)
+library(compiler)
 
-manualStratify <- function(y, kFolds)
+DivideIntoFolds <- function(IDs, kFolds)
 {
-  # to prevent unstratified data subsets (due to the data size)
-  # use a check
-  bStratValid <- FALSE
-  nPosTot <- sum(y == 1)
-  nNegTot <- sum(y == 0)
-  pAvPos <- nPosTot / (nPosTot + nNegTot)
-  pAvNeg <- nNegTot / (nPosTot + nNegTot)
-  pPosThreshL <- pAvPos * 0.8
-  pNegThreshL <- pAvNeg * 0.8
-  pPosThreshH <- pAvPos * 1.25
-  pNegThreshH <- pAvNeg * 1.25
-  nTrialsLimit <- 100
-  iTrialsLimit <- 1
-  while (bStratValid == FALSE)
+  if (length(IDs) < kFolds)
+    stop("Error! Number of data is smaller than kFolds!")
+  
+  avNDataPerFold <- length(IDs) / kFolds
+  pointer <- 1
+  frac <- 0
+  
+  IDsAllFolds <- list()
+  
+  for (iFold in 1:kFolds)
   {
-    folds <- createFolds(y, k=kFolds, returnTrain=TRUE)
-    # check
-    bLocalEvidence <- TRUE
-    for (iFold in 1:kFolds)
+    if (iFold != kFolds)
     {
-      rest_ids <- folds[[iFold]]
-      test_ids <- (1:length(y))[-rest_ids]
-      nPos <- sum(y[test_ids] == 1)
-      nNeg <- sum(y[test_ids] == 0)
-      pPos <- nPos / (nPos + nNeg)
-      pNeg <- 1 - pPos
+      frac <- frac + avNDataPerFold - floor(avNDataPerFold)
+      if (frac >= 1)
+      {
+        IDsThisFold <- IDs[pointer:(pointer+floor(avNDataPerFold))]
+        frac <- frac-1
+      } else
+        IDsThisFold <- IDs[pointer:(pointer+floor(avNDataPerFold)-1)]
       
-      bLocalEvidence <- bLocalEvidence & 
-        ((pPos >= pPosThreshL) & (pNeg >= pNegThreshL) & (pPos <= pPosThreshH) & (pNeg <= pNegThreshH))
+      pointer <- pointer + length(IDsThisFold)
+      
+    } else 
+    {
+      IDsThisFold <- IDs[pointer:length(IDs)]
     }
     
-    if (bLocalEvidence)
-    {
-      bStratValid <- TRUE
-    }
-    
-    # 
-    iTrialsLimit = iTrialsLimit + 1
-    if (iTrialsLimit > nTrialsLimit)
-    {
-      break
-    }
+    IDsAllFolds[[iFold]] <- IDsThisFold
   }
   
-  if (iTrialsLimit > nTrialsLimit)
+  return (IDsAllFolds)
+}
+
+manualStratify <- cmpfun(function(y, k_folds, seed=NULL)
+{
+  if (!(all(levels(y) %in% c(0,1))))
   {
-    cat(paste("Not able to stratify. \n"))
+    stop(paste("Error! Invalid y-values for stratification. ", 
+               "stratifySmallSample currently only supports one type ",
+               "of y values: c(0, 1). "))
+  }
+  
+  # get the positive and negative
+  
+  pos_indices <- which(y==1)
+  if (length(pos_indices) < k_folds)
+    stop("Error! Too few positives. StratifyEasyDifficultPositives failed.")
+  neg_indices <- which(y==0)
+  if (length(neg_indices) < k_folds)
+    stop("Error! Too few negatives. StratifyEasyDifficultPositives failed.")
+  if (!is.null(seed))
+    set.seed(seed=seed)
+  pos_indices <- sample(pos_indices)
+  neg_indices <- sample(neg_indices)
+  
+  # 
+  
+  pos_ids_allfolds <- DivideIntoFolds(pos_indices, k_folds)
+  neg_ids_allfolds <- DivideIntoFolds(neg_indices, k_folds)
+  
+  folds <- list()
+  
+  for (i_fold in 1:k_folds)
+  {
+    IDsInThisFold <- c(pos_ids_allfolds[[i_fold]], 
+                       neg_ids_allfolds[[i_fold]])
+    folds[[i_fold]] <- 
+      (1:length(y))[which(!((1:length(y)) %in% IDsInThisFold))]
   }
   
   return (folds)
+}, option=list(optimize=3))
+
+stratifyFoldIDs <- function(y, k_folds, seed=NULL)
+{
+  ids <- 1:k_folds
+  if (!is.null(seed))
+    set.seed(seed=seed)
+  ids_every_pos <- sample(rep(ids, length.out=sum(y==1)))
+  ids_every_neg <- sample(rep(ids, length.out=sum(y!=1)))
+  
+  ids_every_datum <- rep(-1, length(y))
+  ids_every_datum[which(y==1)] <- ids_every_pos
+  ids_every_datum[which(y!=1)] <- ids_every_neg
+  
+  return (ids_every_datum)
 }
