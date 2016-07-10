@@ -9,18 +9,20 @@ source("functions/computeWeights.R")
 
 
 
-kFoldsEval = 10
+kFoldsEval = 5
 log_lambda_seq <- seq(log(1e-4),log(1e4),length.out=100)
 lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-data_dir <- "C:/Work/Projects/MultipleSclerosis/Results/2015-10-06/2015-10-06 17.22.37/"
-study_name <- c("B2S_relapse_fu_any_01")
+rootDataDir <- "C:/Work/Projects/MultipleSclerosis/Results/2016-07-08/2016-07-08 16.00.19/"
+cohortNames <- c("Cmp")
+outcomeNames <- c("relapse_fu_any_01")
+dataDir <- paste0(rootDataDir, "1/", cohortNames[1], "/", outcomeNames[1], "/")
 
 # read and transform the data
 
-dataset <- read.csv(paste(data_dir, study_name,"_data_for_model.csv", sep=""), 
+dataset <- read.csv(paste0(dataDir, cohortNames[1], "_data_for_model.csv"), 
                     header=TRUE, sep=",", check.names=FALSE)
 # first column is index
 dataset[,1] <- NULL
@@ -32,23 +34,15 @@ n_data <- length(y)
 
 # parameters for the best glmnet model
 
-# # continue
-# selected_alpha <- 0.0
-# selected_lambda <- 0.1609
-# # B2B
-# selected_alpha <- 0.0
-# selected_lambda <- 39.63
-# # B2F
-# selected_alpha <- 0.6
-# selected_lambda <- 1.317
-# # selected_lambda <- 0.0935
-# B2S
-selected_alpha <- 0.0
-selected_lambda <- 10000
+paramInfo <- read.csv(paste0(dataDir, cohortNames[1], "_params.csv"))
+# selected_alpha <- median(paramInfo$alpha)
+# selected_lambda <- median(paramInfo$lambda)
+selected_alpha <- paramInfo$alpha[4]
+selected_lambda <- paramInfo$lambda[4]
 
 # fit the glmnet and glm models
 
-folds <- manualStratify(y, kFoldsEval)
+folds <- manualStratify(y, kFoldsEval, seed=1)
 
 predprobs_alldata_glmnet <- matrix(data=-1, nrow=n_data, ncol=1)
 predprobs_alldata_glm <- matrix(data=-1, nrow=n_data, ncol=1)
@@ -88,33 +82,33 @@ for (iFold in 1:length(folds))
   
   # 
   
-  coefs_test <- predict(fit_glmnet, newx=X_test, s=selected_lambda, type="coefficients")
+  coefs_test <- predict(fit_glmnet, s=selected_lambda, type="coefficients")
   selected_var_names <- c(selected_var_names, rownames(coefs_test)[coefs_test[,1]!=0])
   
   # 
-  predprobs_alldata_glmnet[test_ids] <- predprobs_test_glmnet
-  predprobs_alldata_glm[test_ids] <- predprobs_test_glm
+  predprobs_alldata_glmnet[test_ids,1] <- predprobs_test_glmnet
+  predprobs_alldata_glm[test_ids,1] <- predprobs_test_glm
   # lambda_allfolds[iFold, 1] <- fit$lambda.min
 }
 cat("\n")
 
 # test the AUC
 
-pred_glmnet <- prediction(predictions=predprobs_alldata_glmnet, labels=y)
+pred_glmnet <- prediction(predictions=predprobs_alldata_glmnet[,1], labels=y)
 perf_glmnet <- performance(pred_glmnet, measure = "tpr", x.measure = "fpr") 
-png(filename=paste(result_dir, study_name, "_roc_alpha", 
+png(filename=paste(result_dir, cohortNames[1], "_", outcomeNames[1], "_roc_alpha", 
                    selected_alpha, "glmnet.png", sep=""))
 plot(perf_glmnet, col=rainbow(10))
 dev.off()
 
-pred_glm <- prediction(predictions=predprobs_alldata_glm, labels=y)
+pred_glm <- prediction(predictions=predprobs_alldata_glm[,1], labels=y)
 perf_glm <- performance(pred_glm, measure = "tpr", x.measure = "fpr") 
-png(filename=paste(result_dir, study_name, "_roc_alpha", 
+png(filename=paste(result_dir, cohortNames[1], "_", outcomeNames[1], "_roc_alpha", 
                    selected_alpha, "glm.png", sep=""))
 plot(perf_glm, col=rainbow(10))
 dev.off()
 
-roc_obj_glmnet <- roc(response=as.vector(y), predictor=as.vector(predprobs_alldata_glmnet))
+roc_obj_glmnet <- roc(response=as.vector(y), predictor=as.vector(predprobs_alldata_glmnet[,1]))
 auc_glmnet <- roc_obj_glmnet$auc
 cat(paste("AUC glmnet: ", auc_glmnet, "\n", sep=""))
 
@@ -125,7 +119,7 @@ writeLines(paste(c(ci_obj_glmnet[1], ci_obj_glmnet[2], ci_obj_glmnet[3]),collaps
 close(file_ciauc_glmnet)
 
 
-roc_obj_glm <- roc(response=as.vector(y), predictor=as.vector(predprobs_alldata_glm))
+roc_obj_glm <- roc(response=as.vector(y), predictor=as.vector(predprobs_alldata_glm[,1]))
 auc_glm <- roc_obj_glm$auc
 cat(paste("AUC glm: ", auc_glm, "\n", sep=""))
 
