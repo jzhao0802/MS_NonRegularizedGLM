@@ -15,9 +15,11 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.00.22/"
+rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.55.09/"
+# rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/code/R/gitlab/MS_InitModel/Results/2016-07-12 16.55.09/"
 cohortNames <- c("Cmp")
-outcomeNames <- c("relapse_fu_any_01")
+outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
+                  "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
 timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
@@ -62,11 +64,11 @@ for (cohortName in cohortNames)
     predprobs_alldata_glmnet <- matrix(data=-1, nrow=n_data, ncol=1)
     predprobs_alldata_glm <- matrix(data=-1, nrow=n_data, ncol=1)
     
-    cat("Fold ")
+    # cat("Fold ")
     selected_var_names <- NULL
     for (iFold in 1:length(folds))
     {
-      cat(paste(iFold, "..", sep=""))
+      # cat(paste(iFold, "..", sep=""))
       
       train_ids <- folds[[iFold]]
       test_ids <- which(!((1:n_data) %in% train_ids))
