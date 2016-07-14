@@ -185,7 +185,7 @@ for (cohortName in cohortNames)
 #     selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
 #     write.table(selected_var_names, sep=",", 
 #                 file=paste(resultDirPerOutcome, "selected_vars.csv", sep=""), col.names=NA)
-    top10varsDir <- paste0("F:\\Jie\\MS\\02_Code\\MS_InitModel\\Results\\2016-07-12 14.54.21\\1\\"
+    top10varsDir <- paste0(paste0(rootDataDir, "1\\")
                            , cohortName
                            , '\\'
                            , outcomeName
