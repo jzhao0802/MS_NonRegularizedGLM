@@ -15,8 +15,10 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.55.09/"
+# rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.55.09/"
 # rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/code/R/gitlab/MS_InitModel/Results/2016-07-12 16.55.09/"
+rootDataDir <- "F:\\Jie\\MS\\02_Code\\MS_InitModel\\Results\\2016-07-12 14.54.21\\"
+
 cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
@@ -106,7 +108,6 @@ for (cohortName in cohortNames)
     
        
     # test the AUC
-      
     pred_glmnet <- prediction(predictions=predprobs_alldata_glmnet[,1], labels=y)
     perf_glmnet <- performance(pred_glmnet, measure = "tpr", x.measure = "fpr") 
     png(filename=paste(resultDirPerOutcome, cohortNames[1], "_", outcomeNames[1], "_roc_alpha", 
@@ -180,10 +181,26 @@ for (cohortName in cohortNames)
     
     # use selected features for non-regularised LR
     
-    selected_var_names <- unique(selected_var_names)
+#     selected_var_names <- unique(selected_var_names)
+#     selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
+#     write.table(selected_var_names, sep=",", 
+#                 file=paste(resultDirPerOutcome, "selected_vars.csv", sep=""), col.names=NA)
+    top10varsDir <- paste0("F:\\Jie\\MS\\02_Code\\MS_InitModel\\Results\\2016-07-12 14.54.21\\1\\"
+                           , cohortName
+                           , '\\'
+                           , outcomeName
+                           , '\\')
+  
+    avRank <- read.table(paste0(top10varsDir, 'av_ranking_Cmp.csv')
+                         , sep=','
+                         , header = T
+                         , stringsAsFactors = F
+    )
+    selected_var_names <- rownames(avRank)[order(avRank$x, decreasing = T)][1:10]
+    
     selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
     write.table(selected_var_names, sep=",", 
-                file=paste(resultDirPerOutcome, "selected_vars.csv", sep=""), col.names=NA)
+                file=paste(resultDirPerOutcome, "selected_vars_top10.csv", sep=""), col.names=NA)
     
     # get the confidence intervals and p-values for the coefficients
     
