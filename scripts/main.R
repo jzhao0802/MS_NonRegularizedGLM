@@ -1,6 +1,7 @@
 library(glmnet)
 library(pROC)
 library(ROCR)
+library(dplyr)
 
 rm(list=ls())
 
@@ -17,18 +18,23 @@ lambda_seq <- exp(log_lambda_seq)
 
 # rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.55.09/"
 # rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/code/R/gitlab/MS_InitModel/Results/2016-07-12 16.55.09/"
-rootDataDir <- "F:\\Jie\\MS\\02_Code\\MS_InitModel\\Results\\2016-07-12 14.54.21\\"
+rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
 
 cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
+
+bTopVarsOnly <- T
+nTopVars <- 10
+
+
 
 timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
 result_dir <- paste("./Results/", timeStamp, "/", sep = '')
 dir.create(result_dir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
 
-for (cohortName in cohortNames)
+for (cohortName in cohortNames[1])
 {
   cat(paste0(cohortName, ": "))
   resultDirPerCohort <- paste0(result_dir, cohortName, "/")
@@ -42,11 +48,29 @@ for (cohortName in cohortNames)
     
     dataDir <- paste0(rootDataDir, "1/", cohortName, "/", outcomeName, "/")
     
+    # use top m features only
+    
+    topVarsDir <- paste0(rootDataDir, "1/", cohortName, '/', outcomeName , '/')
+    
+    avRank <- read.table(
+      paste0(topVarsDir, "av_ranking_", cohortName, ".csv"), sep=',', header = T, stringsAsFactors = F
+    )
+    topVarNames <- rownames(avRank)[order(avRank$x, decreasing=F)][1:nTopVars]
+    
+    if (any(grepl("Intercept", topVarNames)))
+      stop("Error! 'Intercept' among the top variables!")
+    
+    write.table(topVarNames, sep=",", 
+                file=paste(resultDirPerOutcome, "varNamesTop", nTopVars, ".csv", sep=""), col.names=NA)
+    
     # read and transform the data
     
-    dataset <- read.csv(paste0(dataDir, cohortNames[1], "_data_for_model.csv"), 
-                        header=TRUE, sep=",", check.names=FALSE)
+    dataset <- tbl_df(read.csv(paste0(dataDir, cohortName, "_data_for_model.csv"), 
+                        header=TRUE, sep=",", check.names=FALSE)) %>%
+      select(one_of(c("y", topVarNames))) %>%
+      as.data.frame()
     
+    # 
     y <- dataset[, 1]
     X <- dataset[, 2:ncol(dataset)]
     X <- data.matrix(X)
@@ -55,7 +79,7 @@ for (cohortName in cohortNames)
     
     # parameters for the best glmnet model
     
-    paramInfo <- read.csv(paste0(dataDir, cohortNames[1], "_params.csv"))
+    paramInfo <- read.csv(paste0(dataDir, cohortName, "_params.csv"))
     selected_alpha <- median(paramInfo$alpha)
     selected_lambda <- median(paramInfo$lambda)
     
@@ -67,7 +91,6 @@ for (cohortName in cohortNames)
     predprobs_alldata_glm <- matrix(data=-1, nrow=n_data, ncol=1)
     
     # cat("Fold ")
-    selected_var_names <- NULL
     for (iFold in 1:length(folds))
     {
       # cat(paste(iFold, "..", sep=""))
@@ -96,8 +119,8 @@ for (cohortName in cohortNames)
       
       # 
       
-      coefs_test <- predict(fit_glmnet, s=selected_lambda, type="coefficients")
-      selected_var_names <- c(selected_var_names, rownames(coefs_test)[coefs_test[,1]!=0])
+#       coefs_test <- predict(fit_glmnet, s=selected_lambda, type="coefficients")
+#       selected_var_names <- c(selected_var_names, rownames(coefs_test)[coefs_test[,1]!=0])
       
       # 
       predprobs_alldata_glmnet[test_ids,1] <- predprobs_test_glmnet
@@ -110,14 +133,14 @@ for (cohortName in cohortNames)
     # test the AUC
     pred_glmnet <- prediction(predictions=predprobs_alldata_glmnet[,1], labels=y)
     perf_glmnet <- performance(pred_glmnet, measure = "tpr", x.measure = "fpr") 
-    png(filename=paste(resultDirPerOutcome, cohortNames[1], "_", outcomeName, "_roc_alpha", 
+    png(filename=paste(resultDirPerOutcome, cohortName, "_", outcomeName, "_roc_alpha", 
                        selected_alpha, "glmnet.png", sep=""))
     plot(perf_glmnet, col=rainbow(10))
     dev.off()
     
     pred_glm <- prediction(predictions=predprobs_alldata_glm[,1], labels=y)
     perf_glm <- performance(pred_glm, measure = "tpr", x.measure = "fpr") 
-    png(filename=paste(resultDirPerOutcome, cohortNames[1], "_", outcomeName, "_roc_alpha", 
+    png(filename=paste(resultDirPerOutcome, cohortName, "_", outcomeName, "_roc_alpha", 
                        selected_alpha, "glm.png", sep=""))
     plot(perf_glm, col=rainbow(10))
     dev.off()
@@ -179,32 +202,11 @@ for (cohortName in cohortNames)
     close(file_roc_compare)
     
     
-    # use selected features for non-regularised LR
     
-#     selected_var_names <- unique(selected_var_names)
-#     selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
-#     write.table(selected_var_names, sep=",", 
-#                 file=paste(resultDirPerOutcome, "selected_vars.csv", sep=""), col.names=NA)
-    top10varsDir <- paste0(paste0(rootDataDir, "1\\")
-                           , cohortName
-                           , '\\'
-                           , outcomeName
-                           , '\\')
-  
-    avRank <- read.table(paste0(top10varsDir, 'av_ranking_Cmp.csv')
-                         , sep=','
-                         , header = T
-                         , stringsAsFactors = F
-    )
-    selected_var_names <- rownames(avRank)[order(avRank$x, decreasing=F)][1:10]
-    
-    selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
-    write.table(selected_var_names, sep=",", 
-                file=paste(resultDirPerOutcome, "selected_vars_top10.csv", sep=""), col.names=NA)
     
     # get the confidence intervals and p-values for the coefficients
     
-    fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", selected_var_names)])
+    fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", topVarNames)])
     # p_values <- coef(summary(fit_glm))[,4]
     ci_coefs <- confint(fit_glm)
     summary_fit_glm <- coef(summary(fit_glm))
