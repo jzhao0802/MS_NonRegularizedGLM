@@ -196,7 +196,7 @@ for (cohortName in cohortNames)
                          , header = T
                          , stringsAsFactors = F
     )
-    selected_var_names <- rownames(avRank)[order(avRank$x, decreasing = T)][1:10]
+    selected_var_names <- rownames(avRank)[order(avRank$x, decreasing=F)][1:10]
     
     selected_var_names <- selected_var_names[which(selected_var_names!="(Intercept)")]
     write.table(selected_var_names, sep=",", 
