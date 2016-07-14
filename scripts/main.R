@@ -16,15 +16,14 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-# rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/Results/2016-07-12/2016-07-12 16.55.09/"
-# rootDataDir <- "F:/Lichao/Work/Projects/MultipleSclerosis/code/R/gitlab/MS_InitModel/Results/2016-07-12 16.55.09/"
-rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
+rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 12.30.14/"
+# rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
 
 cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
-bTopVarsOnly <- T
+bTopVarsOnly <- F
 if (bTopVarsOnly) nTopVars <- 10 else nTopVars <- NULL
 
 
@@ -229,10 +228,20 @@ for (cohortName in cohortNames[1])
     summary_fit_glm <- coef(summary(fit_glm))
     
     
-    vars2Remove <- is.na(ci_coefs[, "2.5 %"])
-    ci_coefs <- ci_coefs[!vars2Remove, ]
-    
-    coef_info <- cbind(summary_fit_glm, ci_coefs)
+#     vars2Remove <- is.na(ci_coefs[, "2.5 %"])
+#     ci_coefs <- ci_coefs[!vars2Remove, ]
+    coef_info <- dplyr::left_join(
+        tbl_df(as.data.frame(ci_coefs)) %>% mutate(rownameCol = rownames(ci_coefs)),
+        tbl_df(as.data.frame(summary_fit_glm)) %>% mutate(rownameCol = rownames(summary_fit_glm)),
+        by = "rownameCol"
+      ) %>%
+      {
+        rownames(.) <- .$rownameCol
+        .
+      } %>%
+      select(-rownameCol)
+    coef_info <- coef_info[, c("Estimate","Std. Error","z value","Pr(>|z|)","2.5 %","97.5 %")]
+    # coef_info <- cbind(summary_fit_glm, ci_coefs)
     odds_ratios <- exp(coef_info[,1])
     odds_ratios_low <- exp(ci_coefs[,1])
     odds_ratios_high <- exp(ci_coefs[,2])
