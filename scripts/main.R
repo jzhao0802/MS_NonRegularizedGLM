@@ -16,15 +16,29 @@ lambda_seq <- exp(log_lambda_seq)
 
 # data
 
-rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 12.30.14/"
-# rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
+
+
 
 cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
 bTopVarsOnly <- F
-if (bTopVarsOnly) nTopVars <- 10 else nTopVars <- NULL
+#
+# !!
+# The input modelling data needs be using the same number of top variables.
+# Otherwise the 'best' hyper-parameters found cannot be used below. 
+# 
+#
+if (bTopVarsOnly) 
+{
+  nTopVars <- 10 
+  rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
+} else 
+{
+  nTopVars <- NULL
+  rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 12.30.14/"
+}
 
 
 
@@ -74,6 +88,20 @@ for (cohortName in cohortNames[1])
         read.csv(paste0(dataDir, cohortName, "_data_for_model.csv"), 
                  header=TRUE, sep=",", check.names=FALSE)
         ) %>%
+      {
+        # check
+        print(paste0("The input modelling uses data of ", ncol(.)-1, 
+                     " predictors. Is that really what you want?"))
+        if (bTopVarsOnly)
+        {
+          if ((ncol(.)-1) != nTopVars)
+            stop(paste0("Error! The input modelling result must use the same", 
+                        " dimensional data as nTopVars. Otherwise the selected",
+                        " beset hyper-parameters cannot be used."))
+        }
+        .
+        
+      } %>%
       {
         if (bTopVarsOnly)
           select(., one_of(c("y", topVarNames)))
