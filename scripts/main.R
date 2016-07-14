@@ -25,7 +25,7 @@ outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
 bTopVarsOnly <- T
-nTopVars <- 10
+if (bTopVarsOnly) nTopVars <- 10 else nTopVars <- NULL
 
 
 
@@ -33,6 +33,9 @@ timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
 result_dir <- paste("./Results/", timeStamp, "/", sep = '')
 dir.create(result_dir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
+
+set.seed(1)
+
 
 for (cohortName in cohortNames[1])
 {
@@ -50,29 +53,43 @@ for (cohortName in cohortNames[1])
     
     # use top m features only
     
-    topVarsDir <- paste0(rootDataDir, "1/", cohortName, '/', outcomeName , '/')
+    if (bTopVarsOnly)
+    {
+      topVarsDir <- paste0(rootDataDir, "1/", cohortName, '/', outcomeName , '/')
+      
+      avRank <- read.table(
+        paste0(topVarsDir, "av_ranking_", cohortName, ".csv"), sep=',', header = T, stringsAsFactors = F
+      )
     
-    avRank <- read.table(
-      paste0(topVarsDir, "av_ranking_", cohortName, ".csv"), sep=',', header = T, stringsAsFactors = F
-    )
-    topVarNames <- rownames(avRank)[order(avRank$x, decreasing=F)][1:nTopVars]
-    
-    if (any(grepl("Intercept", topVarNames)))
-      stop("Error! 'Intercept' among the top variables!")
-    
-    write.table(topVarNames, sep=",", 
-                file=paste(resultDirPerOutcome, "varNamesTop", nTopVars, ".csv", sep=""), col.names=NA)
+      topVarNames <- rownames(avRank)[order(avRank$x, decreasing=F)][1:nTopVars]
+      
+      if (any(grepl("Intercept", topVarNames)))
+        stop("Error! 'Intercept' among the top variables!")
+    }
+   
     
     # read and transform the data
     
-    dataset <- tbl_df(read.csv(paste0(dataDir, cohortName, "_data_for_model.csv"), 
-                        header=TRUE, sep=",", check.names=FALSE)) %>%
-      select(one_of(c("y", topVarNames))) %>%
+    dataset <- 
+      tbl_df(
+        read.csv(paste0(dataDir, cohortName, "_data_for_model.csv"), 
+                 header=TRUE, sep=",", check.names=FALSE)
+        ) %>%
+      {
+        if (bTopVarsOnly)
+          select(., one_of(c("y", topVarNames)))
+        else
+          .
+      } %>%
       as.data.frame()
     
+    
+    selectedVarNames <- colnames(dataset)[2:ncol(dataset)]
+    write.table(selectedVarNames, sep=",", 
+                file=paste(resultDirPerOutcome, "selectedVarNames.csv", sep=""), col.names=NA)
     # 
     y <- dataset[, 1]
-    X <- dataset[, 2:ncol(dataset)]
+    X <- dataset[, selectedVarNames]
     X <- data.matrix(X)
     n_data <- length(y)
     
@@ -85,7 +102,7 @@ for (cohortName in cohortNames[1])
     
     # fit the glmnet and glm models
     
-    folds <- manualStratify(y, kFoldsEval, seed=1)
+    folds <- manualStratify(y, kFoldsEval)
     
     predprobs_alldata_glmnet <- matrix(data=-1, nrow=n_data, ncol=1)
     predprobs_alldata_glm <- matrix(data=-1, nrow=n_data, ncol=1)
@@ -206,7 +223,7 @@ for (cohortName in cohortNames[1])
     
     # get the confidence intervals and p-values for the coefficients
     
-    fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", topVarNames)])
+    fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", selectedVarNames)])
     # p_values <- coef(summary(fit_glm))[,4]
     ci_coefs <- confint(fit_glm)
     summary_fit_glm <- coef(summary(fit_glm))
