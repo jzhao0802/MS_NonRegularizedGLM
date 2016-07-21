@@ -23,7 +23,7 @@ cohortNames <- c("Cmp")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
-bTopVarsOnly <- F
+bTopVarsOnly <- T
 #
 # !!
 # The input modelling data needs be using the same number of top variables.
@@ -33,11 +33,11 @@ bTopVarsOnly <- F
 if (bTopVarsOnly) 
 {
   nTopVars <- 10 
-  rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 15.37.41/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-21/2016-07-21 06.51.18/"
 } else 
 {
   nTopVars <- NULL
-  rootDataDir <- "F:/Lichao/work/Projects/MultipleSclerosis/Results/2016-07-14/2016-07-14 12.30.14/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-21/2016-07-21 04.56.35/"
 }
 
 
