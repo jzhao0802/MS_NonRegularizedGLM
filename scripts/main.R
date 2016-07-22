@@ -124,8 +124,6 @@ for (cohortName in cohortNames[1])
     # parameters for the best glmnet model
     
     paramInfo <- read.csv(paste0(dataDir, cohortName, "_params.csv"))
-    selected_alpha <- median(paramInfo$alpha)
-    selected_lambda <- median(paramInfo$lambda)
     
     # fit the glmnet and glm models
     
@@ -150,8 +148,11 @@ for (cohortName in cohortNames[1])
       
       weight_vec <- computeWeights(y_train)
       
+      selected_alpha <- paramInfo$alpha[iFold]
+      selected_lambda <- paramInfo$lambda[iFold]
+      
       fit_glmnet <- glmnet(X_train, y_train, family="binomial", 
-                           alpha=selected_alpha, lambda=lambda_seq)
+                           alpha=selected_alpha, lambda=selected_lambda)
       predprobs_test_glmnet <- 
         predict(fit_glmnet, newx=X_test, s=selected_lambda, type="response")
       
