@@ -129,17 +129,19 @@ for (cohortName in cohortNames[1])
     
     # fit the glmnet and glm models
     
-    folds <- manualStratify(y, kFoldsEval)
+    # folds <- manualStratify(y, kFoldsEval)
     
     predprobs_alldata_glmnet <- matrix(data=-1, nrow=n_data, ncol=1)
     predprobs_alldata_glm <- matrix(data=-1, nrow=n_data, ncol=1)
     
     # cat("Fold ")
-    for (iFold in 1:length(folds))
+    train_ids_lst <- readRDS(paste0(dataDir, 'trainIds4EvalFolds.RDS'))
+    for (iFold in 1:kFoldsEval)
     {
       # cat(paste(iFold, "..", sep=""))
       
-      train_ids <- folds[[iFold]]
+      # train_ids <- folds[[iFold]]
+      train_ids <- train_ids_lst[[iFold]]
       test_ids <- which(!((1:n_data) %in% train_ids))
       X_train <- X[train_ids,]
       X_test <- X[-train_ids,]
