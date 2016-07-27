@@ -9,9 +9,9 @@ source("functions/manualStratify.R")
 source("functions/computeWeights.R")
 
 
-
+bTestLambda0 <- T
 kFoldsEval = 5
-log_lambda_seq <- seq(log(1e-4),log(1e4),length.out=100)
+log_lambda_seq <- seq(log(1e-20),log(1e4),length.out=100)
 lambda_seq <- exp(log_lambda_seq)
 
 # data
@@ -20,6 +20,7 @@ lambda_seq <- exp(log_lambda_seq)
 
 
 cohortNames <- c("Cmp")
+# cohortNames <- c("Cmp", "BConti", "B2B", "B2Fir", "B2Sec")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
@@ -33,11 +34,11 @@ bTopVarsOnly <- T
 if (bTopVarsOnly) 
 {
   nTopVars <- 10 
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-21/2016-07-21 06.51.18/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-26/2016-07-26 08.17.58/"
 } else 
 {
   nTopVars <- NULL
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-21/2016-07-21 04.56.35/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-26/2016-07-26 04.15.57/"
 }
 
 
@@ -149,10 +150,19 @@ for (cohortName in cohortNames[1])
       weight_vec <- computeWeights(y_train)
       
       selected_alpha <- paramInfo$alpha[iFold]
+      if(bTestLambda0==T){
+        selected_lambda<- 0
+      }
+      
       selected_lambda <- paramInfo$lambda[iFold]
       
       fit_glmnet <- glmnet(X_train, y_train, family="binomial", 
-                           alpha=selected_alpha, lambda=selected_lambda)
+                           alpha=selected_alpha, lambda=selected_lambda
+                           , weights = weight_vec)
+      if(bTestLambda0==T){
+        selected_lambda<- 0
+      }
+      
       predprobs_test_glmnet <- 
         predict(fit_glmnet, newx=X_test, s=selected_lambda, type="response")
       
