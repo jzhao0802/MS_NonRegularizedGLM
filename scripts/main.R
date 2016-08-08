@@ -11,15 +11,15 @@ source("functions/computeWeights.R")
 
 bTestLambda0 <- T
 kFoldsEval = 5
-log_lambda_seq <- seq(log(1e-20),log(1e4),length.out=100)
-lambda_seq <- exp(log_lambda_seq)
+# log_lambda_seq <- seq(log(1e-20),log(1e4),length.out=100)
+# lambda_seq <- exp(log_lambda_seq)
 
 # data
 
 
 
 
-cohortNames <- c("Cmp")
+cohortNames <- c("BConti", "B2B", "B2Fir", "B2Sec")
 # cohortNames <- c("Cmp", "BConti", "B2B", "B2Fir", "B2Sec")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
