@@ -2,6 +2,7 @@ library(glmnet)
 library(pROC)
 library(ROCR)
 library(dplyr)
+library(MASS)
 
 rm(list=ls())
 
@@ -24,7 +25,22 @@ cohortNames <- c("BConti", "B2B", "B2Fir", "B2Sec")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
-bTopVarsOnly <- T
+bTopVarsOnly <- F
+
+myTryCatch <- function(expr) {
+  warn <- err <- NULL
+  value <- withCallingHandlers(
+    tryCatch(expr, error=function(e) {
+      err <<- e
+      NULL
+    }), warning=function(w) {
+      warn <<- w
+      invokeRestart("muffleWarning")
+    })
+  list(value=value, warning=warn, error=err)
+}
+
+
 #
 # !!
 # The input modelling data needs be using the same number of top variables.
@@ -34,11 +50,11 @@ bTopVarsOnly <- T
 if (bTopVarsOnly) 
 {
   nTopVars <- 10 
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-26/2016-07-26 08.17.58/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-08/2016-08-08 09.24.44/"
 } else 
 {
   nTopVars <- NULL
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-07-26/2016-07-26 04.15.57/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-08/2016-08-08 08.19.05/"
 }
 
 
@@ -51,7 +67,7 @@ dir.create(result_dir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
 set.seed(1)
 
 
-for (cohortName in cohortNames[1])
+for (cohortName in cohortNames)
 {
   cat(paste0(cohortName, ": "))
   resultDirPerCohort <- paste0(result_dir, cohortName, "/")
@@ -105,14 +121,14 @@ for (cohortName in cohortNames[1])
       } %>%
       {
         if (bTopVarsOnly)
-          select(., one_of(c("y", topVarNames)))
+          dplyr::select(., one_of(c("y", topVarNames)))
         else
           .
       } %>%
       as.data.frame()
     
     
-    selectedVarNames <- colnames(dataset)[2:ncol(dataset)]
+    selectedVarNames <- setdiff(colnames(dataset), 'y')
     write.table(selectedVarNames, sep=",", 
                 file=paste(resultDirPerOutcome, "selectedVarNames.csv", sep=""), col.names=NA)
     # 
@@ -137,7 +153,7 @@ for (cohortName in cohortNames[1])
     train_ids_lst <- readRDS(paste0(dataDir, 'trainIds4EvalFolds.RDS'))
     for (iFold in 1:kFoldsEval)
     {
-      # cat(paste(iFold, "..", sep=""))
+      cat(paste(iFold, "..", sep=""))
       
       # train_ids <- folds[[iFold]]
       train_ids <- train_ids_lst[[iFold]]
@@ -263,11 +279,15 @@ for (cohortName in cohortNames[1])
     
     # get the confidence intervals and p-values for the coefficients
     
-    fit_glm <- glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", selectedVarNames)])
-    # p_values <- coef(summary(fit_glm))[,4]
-    ci_coefs <- confint(fit_glm)
+    fit_glm_lst <- myTryCatch(glm(y ~ ., family="binomial", data=dataset[, colnames(dataset) %in% c("y", selectedVarNames)]))
+    cat(fit_glm_lst$warning$message, '\n')
+    fit_glm <- fit_glm_lst$value
+    p_values <- coef(summary(fit_glm))[,4]
+    ci_coefs_lst <- myTryCatch(confint(fit_glm))
+    cat(ci_coefs_lst$error$message, '\n\n\n')
+    ci_coefs <- ci_coefs_lst$value
     summary_fit_glm <- coef(summary(fit_glm))
-    
+    if(!is.null(ci_coefs_lst$error$message)) next
     
 #     vars2Remove <- is.na(ci_coefs[, "2.5 %"])
 #     ci_coefs <- ci_coefs[!vars2Remove, ]
@@ -280,7 +300,7 @@ for (cohortName in cohortNames[1])
         rownames(.) <- .$rownameCol
         .
       } %>%
-      select(-rownameCol)
+      dplyr::select(-rownameCol)
     coef_info <- coef_info[, c("Estimate","Std. Error","z value","Pr(>|z|)","2.5 %","97.5 %")]
     # coef_info <- cbind(summary_fit_glm, ci_coefs)
     odds_ratios <- exp(coef_info[,1])
