@@ -25,7 +25,7 @@ cohortNames <- c("BConti", "B2B", "B2Fir", "B2Sec")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
 
-bTopVarsOnly <- F
+bTopVarsOnly <- T
 
 myTryCatch <- function(expr) {
   warn <- err <- NULL
