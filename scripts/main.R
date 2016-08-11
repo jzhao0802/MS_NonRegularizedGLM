@@ -20,7 +20,7 @@ kFoldsEval = 5
 
 
 
-cohortNames <- c("BConti", "B2B", "B2Fir", "B2Sec")
+cohortNames <- c("B2B")
 # cohortNames <- c("Cmp", "BConti", "B2B", "B2Fir", "B2Sec")
 outcomeNames <- c("relapse_fu_any_01", "edssprog", "edssconf3",
                   "relapse_or_prog", "relapse_and_prog", "relapse_or_conf")
@@ -50,11 +50,11 @@ myTryCatch <- function(expr) {
 if (bTopVarsOnly) 
 {
   nTopVars <- 10 
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-08/2016-08-08 09.24.44/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 11.14.49/"
 } else 
 {
   nTopVars <- NULL
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-08/2016-08-08 08.19.05/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 10.54.55/"
 }
 
 
