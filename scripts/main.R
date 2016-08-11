@@ -50,11 +50,11 @@ myTryCatch <- function(expr) {
 if (bTopVarsOnly) 
 {
   nTopVars <- 10 
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 11.14.49/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 12.09.42/"
 } else 
 {
   nTopVars <- NULL
-  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 10.54.55/"
+  rootDataDir <- "F:/Jie/MS/03_Result/2016-08-11/2016-08-11 12.00.36/"
 }
 
 
