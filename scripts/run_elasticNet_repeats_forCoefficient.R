@@ -9,8 +9,8 @@ source("functions/funs_getCoefCi.R")
 
 subEnetDir <- "F:/Jie/MS/03_Result/2016-08-08/2016-08-08 09.24.44/"
 cohort <- 'B2B'
-n.repeat <- 100
-num_pros <- 39
+n.repeat <- 3
+num_pros <- 35
 
 paraFileNm <- paste0(cohort, "_params.csv")
 modelDtFileNm <- paste0(cohort, "_data_for_model.csv")
@@ -22,7 +22,7 @@ Exp.df <- data.frame(outcome=c("relapse_fu_any_01"
                                     , "pre3_edss_score__gt4"
                                     , "pre3_edss_score__gt4")
                      )
-usedMethod <- "mean"
+usedMethod <- "median"
 
 timeStamp <- as.character(Sys.time())
 timeStamp <- gsub(":", ".", timeStamp)  # replace ":" by "."
