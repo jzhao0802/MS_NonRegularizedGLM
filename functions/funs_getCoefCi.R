@@ -176,7 +176,18 @@ run_glmnet_repeatTimes <- function(iExp){
                             , header = T
                             , stringsAsFactors = F
   )
-
+  
+  if(usedMethod=='mean'){
+    avgPara <- apply(paraAllEval[, -1], 2, mean)
+    
+  }else if(usedMethod=="median"){
+    avgPara <- apply(paraAllEval[, -1], 2, median)
+    
+  }
+  
+  avgAlpha <- as.numeric(avgPara[match("alpha", names(avgPara))])
+  avgLmd <- as.numeric(avgPara[match("lambda", names(avgPara))])
+  
   data <- read.table(paste0(dirThisOutcome, modelDtFileNm)
                      , sep=','
                      , header = T
@@ -184,7 +195,7 @@ run_glmnet_repeatTimes <- function(iExp){
   )
   y <- data$y
   # stratify the model into 100 parts to the repeat running
-  set.seed(seedLst[iRepeat])
+  set.seed(seedList[iRepeat])
   evalFoldsIds <- manualStratify(y, n.evalFolds)
   
   
